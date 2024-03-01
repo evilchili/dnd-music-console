@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "croaker"
+version = "0.1.0"
+description = ""
+authors = ["evilchili <evilchili@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "croaker" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+prompt-toolkit = "^3.0.38"
+typer = "^0.9.0"
+python-dotenv = "^0.21.0"
+rich = "^13.7.0"
+pyyaml = "^6.0.1"
+bottle = "^0.12.25"
+paste = "^3.7.1"
+python-daemon = "^3.0.1"
+requests = "^2.31.0"
+psutil = "^5.9.8"
+exscript = "^2.6.28"
+
+[tool.poetry.scripts]
+croaker = "croaker.cli:app"
+
+[tool.poetry.dev-dependencies]
+black = "^23.3.0"
+isort = "^5.12.0"
+pyproject-autoflake = "^1.0.2"
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+
+[tool.isort]
+multi_line_output = 3
+line_length = 120
+include_trailing_comma = true
+
+[tool.autoflake]
+check = false                        # return error code if changes are needed
+in-place = true                      # make changes to files instead of printing diffs
+recursive = true                     # drill down directories recursively
+remove-all-unused-imports = true     # remove all unused imports (not just those from the standard library)
+ignore-init-module-imports = true    # exclude __init__.py when removing unused imports
+remove-duplicate-keys = true         # remove all duplicate keys in objects
+remove-unused-variables = true       # remove unused variables
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
