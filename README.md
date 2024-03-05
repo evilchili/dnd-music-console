@@ -13,6 +13,7 @@ Because I run an online D&amp;D game, which includes a background music stream f
 This assumes you have a functioning icecast2 installation already.
 
 ```
+% sudo apt install libshout3-dev
 % mkdir -p ~/.dnd/croaker
 % croaker setup > ~/.dnd/croaker/defaults
 % vi ~/.dnd/croaker/defaults  # adjust to taste
@@ -23,7 +24,7 @@ This assumes you have a functioning icecast2 installation already.
 Now start the server, which will begin streaming the `session_start` playlist:
 
 ```
-% croaker start
+% croaker server start
 Daemonizing webserver on http://0.0.0.0:8003, pidfile and output in ~/.dnd/croaker
 ```
 

@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from typing_extensions import Annotated
 
 import croaker.path
-from croaker import client, controller, server
+from croaker.server import server
 from croaker.exceptions import ConfigurationError
 from croaker.playlist import Playlist
 
@@ -28,15 +28,8 @@ SECRET_KEY=
 # Where the record the webserver daemon's PID
 PIDFILE=~/.dnd/croaker/croaker.pid
 
-# Web interface configuration
-HOST=127.0.0.1
+HOST=0.0.0.0
 PORT=8003
-
-## CONTROLLER CLIENT
-
-# The host and port to use when connecting to the websever.
-CONTROLLER_HOST=127.0.0.1
-CONTROLLER_PORT=8003
 
 ## MEDIA
 
@@ -67,7 +60,6 @@ ICECAST_PORT=
 ICECAST_URL=
 """
 
-
 app = typer.Typer()
 app_state = {}
 
@@ -79,47 +71,27 @@ def main(
         Path("~/.dnd/croaker"),
         help="Path to the Croaker environment",
     ),
-    host: Optional[str] = typer.Option(
-        None,
-        help="bind address",
-    ),
-    port: Optional[int] = typer.Option(
-        None,
-        help="bind port",
-    ),
     debug: Optional[bool] = typer.Option(None, help="Enable debugging output"),
 ):
     load_dotenv(root.expanduser() / Path("defaults"))
     load_dotenv(stream=io.StringIO(SETUP_HELP))
-    if host:
-        os.environ["HOST"] = host
-    if port:
-        os.environ["PORT"] = port
     if debug is not None:
         if debug:
-            os.environ["DEBUG"] = 1
+            os.environ["DEBUG"] = '1'
         else:
             del os.environ["DEBUG"]
 
     logging.basicConfig(
-        format="%(message)s",
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.DEBUG if debug else logging.INFO,
     )
 
     try:
-        croaker.path.media_root()
-        croaker.path.cache_root()
+        croaker.path.root()
+        croaker.path.playlist_root()
     except ConfigurationError as e:
         sys.stderr.write(f"{e}\n\n{SETUP_HELP}")
         sys.exit(1)
-
-    app_state["client"] = client.Client(
-        host=os.environ["CONTROLLER_HOST"],
-        port=os.environ["CONTROLLER_PORT"],
-    )
-
-    if not context.invoked_subcommand:
-        return play(context)
 
 
 @app.command()
@@ -139,7 +111,8 @@ def start(
     """
     Start the Croaker command and control webserver.
     """
-    controller.start()
+    logging.debug("Switching to session_start playlist...")
+    logging.debug("Starting server...")
     if daemonize:
         server.daemonize()
     else:
@@ -151,33 +124,7 @@ def stop():
     """
     Terminate the webserver process and liquidsoap.
     """
-    controller.stop()
     server.stop()
-
-
-@app.command()
-def play(
-    playlist: str = typer.Argument(
-        ...,
-        help="Playlist name",
-    )
-):
-    """
-    Begin playing tracks from the directory $PLAYLIST_ROOT/[NAME].
-    """
-    res = app_state["client"].play(playlist)
-    if res.status_code == 200:
-        print("OK")
-
-
-@app.command()
-def skip():
-    """
-    Play the next track on the current playlist.
-    """
-    res = app_state["client"].skip()
-    if res.status_code == 200:
-        print("OK")
 
 
 @app.command()
@@ -190,9 +137,11 @@ def add(
     tracks: Annotated[Optional[List[Path]], typer.Argument()] = None,
 ):
     """
-    Recursively add one or more paths to the specified playlist. Tracks can be
-    any combination of individual audio files and directories containing audio
-    files; anything not already on the playlist will be added to it.
+    Recursively add one or more paths to the specified playlist.
+
+    Tracks can be any combination of individual audio files and directories
+    containing audio files; anything not already on the playlist will be
+    added to it.
 
     If --theme is specified, the first track will be designated the playlist
     "theme." Theme songs get played first whenever the playlist is loaded,

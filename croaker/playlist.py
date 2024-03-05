@@ -11,6 +11,8 @@ import croaker.path
 
 playlists = {}
 
+NowPlaying = None
+
 
 def _stripped(name):
     name.replace('"', "")
@@ -21,8 +23,12 @@ def _stripped(name):
 @dataclass
 class Playlist:
     name: str
+    position: int = 0
     theme: Path = Path("_theme.mp3")
-    current_track: int = 0
+
+    @property
+    def current(self):
+        return self.tracks[self.position]
 
     @cached_property
     def path(self):
@@ -36,12 +42,19 @@ class Playlist:
         entries = []
         theme = self.path / self.theme
         if theme.exists():
-            entries[0] = theme
+            entries.append(theme)
         files = [e for e in self.get_audio_files() if e.name != "_theme.mp3"]
         if files:
             shuffle(files)
             entries += files
         return entries
+
+    def skip(self):
+        logging.debug(f"Skipping from {self.position} on {self.name}")
+        if self.position == len(self.tracks) - 1:
+            self.position = 0
+        else:
+            self.position += 1
 
     def get_audio_files(self, path: Path = None):
         if not path:
@@ -65,8 +78,6 @@ class Playlist:
     def add(self, tracks: List[Path], make_theme: bool = False):
         self.path.mkdir(parents=True, exist_ok=True)
         if make_theme:
-            if source.is_dir():
-                raise RuntimeError(f"Cannot create a playlist theme from a directory: {source}")
             target = self.path / "_theme.mp3"
             source = tracks.pop(0)
             self._add_track(target, source, make_theme=True)

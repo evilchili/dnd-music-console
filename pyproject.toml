@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "croaker"
-version = "0.1.1"
+version = "0.1.3"
 description = ""
 authors = ["evilchili <evilchili@gmail.com>"]
 readme = "README.md"
@@ -15,12 +15,12 @@ typer = "^0.9.0"
 python-dotenv = "^0.21.0"
 rich = "^13.7.0"
 pyyaml = "^6.0.1"
-bottle = "^0.12.25"
 paste = "^3.7.1"
 python-daemon = "^3.0.1"
 requests = "^2.31.0"
 psutil = "^5.9.8"
 exscript = "^2.6.28"
+python-shout = "^0.2.8"
 
 [tool.poetry.scripts]
 croaker = "croaker.cli:app"
