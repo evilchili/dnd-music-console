@@ -11,6 +11,10 @@ logger = logging.getLogger('streamer')
 
 
 class AudioStreamer(threading.Thread):
+    """
+    Receive filenames from the controller thread and stream the contents of
+    those files to the icecast server.
+    """
     def __init__(self, queue, skip_event, stop_event):
         super().__init__()
         self.queue = queue

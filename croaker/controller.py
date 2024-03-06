@@ -9,6 +9,12 @@ logger = logging.getLogger('controller')
 
 
 class Controller(threading.Thread):
+    """
+    A background thread started by the CroakerServer instance that controls a
+    shoutcast source streamer. The primary purpose of this class is to allow
+    the command and control server to interrupt streaming operations to
+    skip to a new track or load a new playlist.
+    """
     def __init__(self, control_queue):
         self._streamer_queue = None
         self._control_queue = control_queue
@@ -23,6 +29,18 @@ class Controller(threading.Thread):
             self._streamer_queue = queue.Queue()
             self._streamer = AudioStreamer(self._streamer_queue, self.skip_event, self.stop_event)
         return self._streamer
+
+    def stop(self):
+        if self._streamer:
+            logging.debug("Sending STOP signal to streamer...")
+            self.stop_event.set()
+        self.playlist = None
+
+    def load(self, playlist_name: str):
+        self.playlist = load_playlist(playlist_name)
+        logger.debug(f"Switching to {self.playlist = }")
+        for track in self.playlist.tracks:
+            self._streamer_queue.put(str(track).encode())
 
     def run(self):
         logger.debug("Starting AudioStreamer...")
@@ -53,15 +71,3 @@ class Controller(threading.Thread):
 
     def handle_STOP(self):
         return self.stop()
-
-    def stop(self):
-        if self._streamer:
-            logging.debug("Sending STOP signal to streamer...")
-            self.stop_event.set()
-        self.playlist = None
-
-    def load(self, playlist_name: str):
-        self.playlist = load_playlist(playlist_name)
-        logger.debug(f"Switching to {self.playlist = }")
-        for track in self.playlist.tracks:
-            self._streamer_queue.put(str(track).encode())
