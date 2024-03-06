@@ -1,6 +1,6 @@
 # Croaker
 
-A shoutcast audio playlist designed for serving D&amp;D session music.
+A shoutcast audio player designed for serving D&amp;D session music.
 
 ## What? Why?
 
