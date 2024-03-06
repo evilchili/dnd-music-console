@@ -73,9 +73,12 @@ class CroakerServer(socketserver.TCPServer):
     def tell_controller(self, msg):
         self._queue.put(msg)
 
+    def bind_address(self):
+        return (os.environ["HOST"], int(os.environ["PORT"]))
+
     def daemonize(self) -> None:
-        logger.info(f"Daemonizing controller; pidfile and output in {path.root()}")
-        super().__init__((os.environ["HOST"], int(os.environ["PORT"])), RequestHandler)
+        logger.info(f"Daemonizing controller on {self.bind_address()}; pidfile and output in {path.root()}")
+        super().__init__(self.bind_address(), RequestHandler)
 
         self._context.pidfile = self._pidfile()
         self._context.stdout = open(path.root() / Path("croaker.out"), "wb")

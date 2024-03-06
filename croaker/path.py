@@ -10,15 +10,10 @@ def root():
 
 
 def cache_root():
-    path = Path(os.environ.get("CACHE_ROOT", root() / Path("cache"))).expanduser()
+    path = Path(os.environ.get("CACHE_ROOT", root() / "cache")).expanduser()
     return path
 
 
 def playlist_root():
-    path = Path(os.environ.get("PLAYLIST_ROOT", root() / Path("playlsits"))).expanduser()
-    return path
-
-
-def transcoded_media(relpath):
-    path = cache_root() / Path(relpath + ".webm")
+    path = Path(os.environ.get("PLAYLIST_ROOT", root() / "playlists")).expanduser()
     return path

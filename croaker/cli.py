@@ -19,25 +19,18 @@ SETUP_HELP = """
 # Root directory for croaker configuration and logs. See also croaker --root.
 CROAKER_ROOT=~/.dnd/croaker
 
-## COMMAND AND CONTROL WEBSERVER
-
-# Please make sure you set SECRET_KEY in your environment if you are running
-# the command and control webserver. Clients do not need this.
-SECRET_KEY=
-
-# Where the record the webserver daemon's PID
-PIDFILE=~/.dnd/croaker/croaker.pid
-
-HOST=0.0.0.0
-PORT=8003
-
-## MEDIA
-
 # where to store playlist sources
-PLAYLIST_ROOT=~/.dnd/croaker/playlists
+#PLAYLIST_ROOT=$CROAKER_ROOT/playlists
 
 # where to cache transcoded media files
-CACHE_ROOT=~/.dnd/croaker/cache
+#CACHE_ROOT=$CROAKER_ROOT/cache
+
+# Where the record the daemon's PID
+#PIDFILE=$CROAKER_ROOT/croaker.pid
+
+# Command and Control TCP Server bind address
+HOST=0.0.0.0
+PORT=8003
 
 # the kinds of files to add to playlists
 MEDIA_GLOB=*.mp3,*.flac,*.m4a
@@ -46,11 +39,6 @@ MEDIA_GLOB=*.mp3,*.flac,*.m4a
 # strings INFILE and OUTFILE will be replaced with the media source file and
 # the cached output location, respectively.
 TRANSCODER=/usr/bin/ffmpeg -i INFILE '-hide_banner -loglevel error -codec:v copy -codec:a libmp3lame -q:a 2' OUTFILE
-
-## LIQUIDSOAP AND ICECAST
-
-# The liquidsoap executable
-LIQUIDSOAP=/usr/bin/liquidsoap
 
 # Icecast2 configuration for Liquidsoap
 ICECAST_PASSWORD=
@@ -108,13 +96,11 @@ def setup(context: typer.Context):
 @app.command()
 def start(
     context: typer.Context,
-    daemonize: bool = typer.Option(True, help="Daemonize the webserver."),
+    daemonize: bool = typer.Option(True, help="Daemonize the server."),
 ):
     """
-    Start the Croaker command and control webserver.
+    Start the Croaker command and control server.
     """
-    logger.debug("Switching to session_start playlist...")
-    logger.debug("Starting server...")
     if daemonize:
         server.daemonize()
     else:
@@ -124,7 +110,7 @@ def start(
 @app.command()
 def stop():
     """
-    Terminate the webserver process and liquidsoap.
+    Terminate the server.
     """
     server.stop()
 
