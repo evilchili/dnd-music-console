@@ -5,6 +5,8 @@ import threading
 from croaker.playlist import load_playlist
 from croaker.streamer import AudioStreamer
 
+logger = logging.getLogger('controller')
+
 
 class Controller(threading.Thread):
     def __init__(self, control_queue):
@@ -23,12 +25,12 @@ class Controller(threading.Thread):
         return self._streamer
 
     def run(self):
-        logging.debug("Starting AudioStreamer...")
+        logger.debug("Starting AudioStreamer...")
         self.streamer.start()
         self.load("session_start")
         while True:
             data = self._control_queue.get()
-            logging.debug(f"{data = }")
+            logger.debug(f"{data = }")
             self.process_request(data)
 
     def process_request(self, data):
@@ -38,7 +40,7 @@ class Controller(threading.Thread):
             return
         handler = getattr(self, f"handle_{cmd}", None)
         if not handler:
-            logging.debug("Ignoring invalid command: {cmd} = }")
+            logger.debug("Ignoring invalid command: {cmd} = }")
             return
         handler(args)
 
@@ -46,7 +48,7 @@ class Controller(threading.Thread):
         return self.load(args[0])
 
     def handle_FFWD(self, args):
-        logging.debug("Sending SKIP signal to streamer...")
+        logger.debug("Sending SKIP signal to streamer...")
         self.skip_event.set()
 
     def handle_STOP(self):
@@ -60,6 +62,6 @@ class Controller(threading.Thread):
 
     def load(self, playlist_name: str):
         self.playlist = load_playlist(playlist_name)
-        logging.debug(f"Switching to {self.playlist = }")
+        logger.debug(f"Switching to {self.playlist = }")
         for track in self.playlist.tracks:
             self._streamer_queue.put(str(track).encode())

@@ -7,6 +7,8 @@ from time import sleep
 
 import shout
 
+logger = logging.getLogger('streamer')
+
 
 class AudioStreamer(threading.Thread):
     def __init__(self, queue, skip_event, stop_event):
@@ -30,12 +32,12 @@ class AudioStreamer(threading.Thread):
         return s
 
     def run(self):
-        logging.debug("Initialized")
+        logger.debug("Initialized")
         self._shout.open()
         while not self.stop_requested.is_set():
             self._shout.get_connected()
             track = self.queue.get()
-            logging.debug(f"Received: {track = }")
+            logger.debug(f"Received: {track = }")
             if track:
                 self.play(Path(track.decode()))
                 continue
@@ -45,7 +47,7 @@ class AudioStreamer(threading.Thread):
     def play(self, track: Path):
         with track.open("rb") as fh:
             self._shout.get_connected()
-            logging.debug(f"Streaming {track.stem = }")
+            logger.debug(f"Streaming {track.stem = }")
             self._shout.set_metadata({"song": track.stem})
             input_buffer = fh.read(4096)
             while not self.skip_requested.is_set():

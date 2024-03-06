@@ -63,6 +63,8 @@ ICECAST_URL=
 app = typer.Typer()
 app_state = {}
 
+logger = logging.getLogger('cli')
+
 
 @app.callback()
 def main(
@@ -111,8 +113,8 @@ def start(
     """
     Start the Croaker command and control webserver.
     """
-    logging.debug("Switching to session_start playlist...")
-    logging.debug("Starting server...")
+    logger.debug("Switching to session_start playlist...")
+    logger.debug("Starting server...")
     if daemonize:
         server.daemonize()
     else:

@@ -10,6 +10,8 @@ from croaker import path
 from croaker.controller import Controller
 from croaker.pidfile import pidfile
 
+logger = logging.getLogger('server')
+
 
 class RequestHandler(socketserver.StreamRequestHandler):
     supported_commands = {
@@ -23,7 +25,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
     def handle(self):
         while True:
             self.data = self.rfile.readline().strip().decode()
-            logging.debug(f"{self.data = }")
+            logger.debug(f"{self.data = }")
             try:
                 cmd = self.data[0:4].strip().upper()
                 args = self.data[5:]
@@ -72,7 +74,7 @@ class CroakerServer(socketserver.TCPServer):
         self._queue.put(msg)
 
     def daemonize(self) -> None:
-        logging.info(f"Daemonizing controller; pidfile and output in {path.root()}")
+        logger.info(f"Daemonizing controller; pidfile and output in {path.root()}")
         super().__init__((os.environ["HOST"], int(os.environ["PORT"])), RequestHandler)
 
         self._context.pidfile = self._pidfile()
@@ -84,7 +86,7 @@ class CroakerServer(socketserver.TCPServer):
             self.controller.start()
             self.serve_forever()
         except KeyboardInterrupt:
-            logging.info("Shutting down.")
+            logger.info("Shutting down.")
             self.stop()
 
     def stop(self) -> None:
