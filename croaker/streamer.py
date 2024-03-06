@@ -1,13 +1,11 @@
-import os
 import logging
+import os
 import threading
-from pathlib import Path
-
 from functools import cached_property
+from pathlib import Path
+from time import sleep
 
 import shout
-
-from time import sleep
 
 
 class AudioStreamer(threading.Thread):
@@ -20,19 +18,15 @@ class AudioStreamer(threading.Thread):
     @cached_property
     def _shout(self):
         s = shout.Shout()
-        s.name = 'Croaker Radio'
-        s.url = os.environ['ICECAST_URL']
-        s.mount = os.environ['ICECAST_MOUNT']
-        s.host = os.environ['ICECAST_HOST']
-        s.port = int(os.environ['ICECAST_PORT'])
-        s.password = os.environ['ICECAST_PASSWORD']
-        s.protocol = 'http'
-        s.format = 'mp3'
-        s.audio_info = {
-            shout.SHOUT_AI_BITRATE: '192',
-            shout.SHOUT_AI_SAMPLERATE: '44100',
-            shout.SHOUT_AI_CHANNELS: '5'
-        }
+        s.name = "Croaker Radio"
+        s.url = os.environ["ICECAST_URL"]
+        s.mount = os.environ["ICECAST_MOUNT"]
+        s.host = os.environ["ICECAST_HOST"]
+        s.port = int(os.environ["ICECAST_PORT"])
+        s.password = os.environ["ICECAST_PASSWORD"]
+        s.protocol = "http"
+        s.format = "mp3"
+        s.audio_info = {shout.SHOUT_AI_BITRATE: "192", shout.SHOUT_AI_SAMPLERATE: "44100", shout.SHOUT_AI_CHANNELS: "5"}
         return s
 
     def run(self):
@@ -49,10 +43,10 @@ class AudioStreamer(threading.Thread):
         self._shout.close()
 
     def play(self, track: Path):
-        with track.open('rb') as fh:
+        with track.open("rb") as fh:
             self._shout.get_connected()
             logging.debug(f"Streaming {track.stem = }")
-            self._shout.set_metadata({'song': track.stem})
+            self._shout.set_metadata({"song": track.stem})
             input_buffer = fh.read(4096)
             while not self.skip_requested.is_set():
                 if self.stop_requested.is_set():

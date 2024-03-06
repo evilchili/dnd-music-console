@@ -1,6 +1,7 @@
 import logging
-import threading
 import queue
+import threading
+
 from croaker.playlist import load_playlist
 from croaker.streamer import AudioStreamer
 
@@ -24,14 +25,14 @@ class Controller(threading.Thread):
     def run(self):
         logging.debug("Starting AudioStreamer...")
         self.streamer.start()
-        self.load('session_start')
+        self.load("session_start")
         while True:
             data = self._control_queue.get()
             logging.debug(f"{data = }")
             self.process_request(data)
 
     def process_request(self, data):
-        cmd, *args = data.split(' ')
+        cmd, *args = data.split(" ")
         cmd = cmd.strip()
         if not cmd:
             return

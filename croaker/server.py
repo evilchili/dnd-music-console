@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 import queue
 import socketserver
 from pathlib import Path
@@ -7,17 +7,17 @@ from pathlib import Path
 import daemon
 
 from croaker import path
-from croaker.pidfile import pidfile
 from croaker.controller import Controller
+from croaker.pidfile import pidfile
 
 
 class RequestHandler(socketserver.StreamRequestHandler):
     supported_commands = {
-        'PLAY': "$PLAYLIST_NAME  - Switch to the specified playlist.",
-        'FFWD': "                - Skip to the next track in the playlist.",
-        'HELP': "                - Display command help.",
-        'KTHX': "                - Close the current connection.",
-        'STOP': "                - Stop Croaker.",
+        "PLAY": "$PLAYLIST_NAME  - Switch to the specified playlist.",
+        "FFWD": "                - Skip to the next track in the playlist.",
+        "HELP": "                - Display command help.",
+        "KTHX": "                - Close the current connection.",
+        "STOP": "                - Stop Croaker.",
     }
 
     def handle(self):
@@ -33,8 +33,8 @@ class RequestHandler(socketserver.StreamRequestHandler):
             if cmd not in self.supported_commands:
                 self.send(f"ERR Unknown Command '{cmd}'")
 
-            if cmd == 'KTHX':
-                return self.send('KBAI')
+            if cmd == "KTHX":
+                return self.send("KBAI")
 
             handler = getattr(self, f"handle_{cmd}", None)
             if handler:
@@ -43,16 +43,14 @@ class RequestHandler(socketserver.StreamRequestHandler):
                 self.default_handler(cmd, args)
 
     def send(self, msg):
-        return self.wfile.write(msg.encode() + b'\n')
+        return self.wfile.write(msg.encode() + b"\n")
 
     def default_handler(self, cmd, args):
         self.server.tell_controller(f"{cmd} {args}")
-        return self.send('OK')
+        return self.send("OK")
 
     def handle_HELP(self, args):
-        return self.send('\n'.join(
-            f"{cmd} {txt}" for cmd, txt in self.supported_commands.items()
-        ))
+        return self.send("\n".join(f"{cmd} {txt}" for cmd, txt in self.supported_commands.items()))
 
     def handle_STOP(self, args):
         self.send("Shutting down.")
@@ -75,7 +73,7 @@ class CroakerServer(socketserver.TCPServer):
 
     def daemonize(self) -> None:
         logging.info(f"Daemonizing controller; pidfile and output in {path.root()}")
-        super().__init__((os.environ['HOST'], int(os.environ['PORT'])), RequestHandler)
+        super().__init__((os.environ["HOST"], int(os.environ["PORT"])), RequestHandler)
 
         self._context.pidfile = self._pidfile()
         self._context.stdout = open(path.root() / Path("croaker.out"), "wb")

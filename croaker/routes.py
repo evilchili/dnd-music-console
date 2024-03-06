@@ -1,6 +1,6 @@
 import logging
 
-from bottle import route, abort
+from bottle import abort, route
 
 from croaker import streamer
 
@@ -27,5 +27,5 @@ def next_in_queue():
         abort()
     track1 = pl.current
     controller.play_next()
-    tracke2 = controller.now_playing().current
-    return '\n'.join([str(track1), str(track2)])
+    controller.now_playing().current
+    return "\n".join([str(track1), str(track2)])

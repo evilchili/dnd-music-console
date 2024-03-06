@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 from typing_extensions import Annotated
 
 import croaker.path
-from croaker.server import server
 from croaker.exceptions import ConfigurationError
 from croaker.playlist import Playlist
+from croaker.server import server
 
 SETUP_HELP = """
 # Root directory for croaker configuration and logs. See also croaker --root.
@@ -77,12 +77,12 @@ def main(
     load_dotenv(stream=io.StringIO(SETUP_HELP))
     if debug is not None:
         if debug:
-            os.environ["DEBUG"] = '1'
+            os.environ["DEBUG"] = "1"
         else:
             del os.environ["DEBUG"]
 
     logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         level=logging.DEBUG if debug else logging.INFO,
     )
 
