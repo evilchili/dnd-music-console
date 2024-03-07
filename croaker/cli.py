@@ -101,10 +101,7 @@ def start(
     """
     Start the Croaker command and control server.
     """
-    if daemonize:
-        server.daemonize()
-    else:
-        server.start()
+    server.start(daemonize=daemonize)
 
 
 @app.command()

@@ -13,8 +13,6 @@ logger = logging.getLogger('playlist')
 
 playlists = {}
 
-NowPlaying = None
-
 
 def _stripped(name):
     name.replace('"', "")
@@ -25,16 +23,11 @@ def _stripped(name):
 @dataclass
 class Playlist:
     name: str
-    position: int = 0
     theme: Path = Path("_theme.mp3")
-
-    @property
-    def current(self):
-        return self.tracks[self.position]
 
     @cached_property
     def path(self):
-        return croaker.path.playlist_root() / Path(self.name)
+        return croaker.path.playlist_root() / self.name
 
     @cached_property
     def tracks(self):
@@ -50,13 +43,6 @@ class Playlist:
             shuffle(files)
             entries += files
         return entries
-
-    def skip(self):
-        logging.debug(f"Skipping from {self.position} on {self.name}")
-        if self.position == len(self.tracks) - 1:
-            self.position = 0
-        else:
-            self.position += 1
 
     def get_audio_files(self, path: Path = None):
         if not path:
