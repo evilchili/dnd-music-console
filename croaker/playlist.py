@@ -27,12 +27,12 @@ class Playlist:
 
     @cached_property
     def path(self):
-        return croaker.path.playlist_root() / self.name
+        return self._get_path()
 
     @cached_property
     def tracks(self):
         if not self.path.exists():
-            raise RuntimeError(f"Playlist {self.name} not found at {self.path}.")
+            raise RuntimeError(f"Playlist {self.name} not found at {self.path}.")  # pragma: no cover
 
         entries = []
         theme = self.path / self.theme
@@ -49,13 +49,12 @@ class Playlist:
             path = self.path
         logging.debug(f"Getting files matching {os.environ['MEDIA_GLOB']} from {path}")
         pats = os.environ["MEDIA_GLOB"].split(",")
-        return chain(*[list(path.glob(pat)) for pat in pats])
+        return chain(*[list(path.rglob(pat)) for pat in pats])
 
-    def _add_track(self, target: Path, source: Path, make_theme: bool = False):
-        if source.is_dir():
-            for file in self.get_audio_files(source):
-                self._add_track(self.path / _stripped(file.name), file)
-            return
+    def _get_path(self):
+        return croaker.path.playlist_root() / self.name
+
+    def _add_track(self, target: Path, source: Path):
         if target.exists():
             if not target.is_symlink():
                 logging.warning(f"{target}: target already exists and is not a symlink; skipping.")
@@ -63,14 +62,26 @@ class Playlist:
             target.unlink()
         target.symlink_to(source)
 
-    def add(self, tracks: List[Path], make_theme: bool = False):
+    def add(self, paths: List[Path], make_theme: bool = False):
+        logger.debug(f"Adding everything from {paths = }")
         self.path.mkdir(parents=True, exist_ok=True)
-        if make_theme:
-            target = self.path / "_theme.mp3"
-            source = tracks.pop(0)
-            self._add_track(target, source, make_theme=True)
-        for track in tracks:
-            self._add_track(target=self.path / _stripped(track.name), source=track)
+        for path in paths:
+            if path.is_dir():
+                files = list(self.get_audio_files(path))
+                if make_theme:
+                    logger.debug(f"Adding first file from dir as theme: {files[0] = }")
+                    self._add_track(self.path / "_theme.mp3", files.pop(0))
+                    make_theme = False
+                for file in files:
+                    logger.debug(f"Adding {file = }")
+                    self._add_track(target=self.path / _stripped(file.name), source=file)
+            elif make_theme:
+                logger.debug(f"Adding path as theme: {path = }")
+                self._add_track(self.path / "_theme.mp3", path)
+                make_theme = False
+            else:
+                logger.debug(f"Adding {path = }")
+                self._add_track(target=self.path / _stripped(path.name), source=path)
         return sorted(self.get_audio_files())
 
     def __repr__(self):
@@ -79,7 +90,7 @@ class Playlist:
         return "\n".join(lines)
 
 
-def load_playlist(name: str):
+def load_playlist(name: str):  # pragma: no cover
     if name not in playlists:
         playlists[name] = Playlist(name=name)
     return playlists[name]

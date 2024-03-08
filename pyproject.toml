@@ -29,6 +29,8 @@ croaker = "croaker.cli:app"
 black = "^23.3.0"
 isort = "^5.12.0"
 pyproject-autoflake = "^1.0.2"
+pytest = "^7.2.0"
+pytest-cov = "^4.0.0"
 
 [tool.black]
 line-length = 120
