@@ -45,18 +45,20 @@ class RequestHandler(socketserver.StreamRequestHandler):
         """
         while True:
             self.data = self.rfile.readline().strip().decode()
-            logger.debug(f"{self.data = }")
             try:
                 cmd = self.data[0:4].strip().upper()
                 args = self.data[5:]
             except IndexError:
                 self.send(f"ERR Command not understood '{cmd}'")
+                sleep(0.001)
                 continue
 
             if not cmd:
+                sleep(0.001)
                 continue
             elif cmd not in self.supported_commands:
                 self.send(f"ERR Unknown Command '{cmd}'")
+                sleep(0.001)
                 continue
             elif cmd == "KTHX":
                 return self.send("KBAI")
