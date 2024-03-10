@@ -2,11 +2,29 @@
 
 A shoutcast audio player designed for serving D&amp;D session music.
 
+### Features
+
+* Native streaming of MP3 sources direct to your shoutcast / icecast server
+* Transcoding of anything your local `ffmpeg` installation can convert to mp3
+* Playlists are built using symlinks
+* Randomizes playlist order the first time it is cached
+* Always plays `_theme.mp3` first upon switching to a playlist, if it exists
+* Falls back to silence if the stream encounters an error
+
+### Requirements
+
+* A functioning shoutcast / icecast server
+* Python >= 3.10
+* ffmpeg
+* libshout3-dev
+
+
 ## What? Why?
 
 Because I run an online D&amp;D game, which includes a background music stream for my players. The stream used to be served by liquidsoap and controlled by a bunch of bash scripts I cobbled together which are functional but brittle, and liquidsoap is a nightmare for the small use case. Also, this currently requires me to have a terminal window open to my media server to control liquidsoap directly, and I'd rather integrate the music controls directly with the rest of my DM tools, all of which run on my laptop.
 
 *Now that is a powerful yak! -- Aesop Rock (misquoted)*
+
 
 ## Quick Start (Server)
 
@@ -32,22 +50,33 @@ Connnect to the command &amp; control server:
 
 ```
 % telnet localhost 8003
-Trying 127.0.0.1...
-Connected to croaker.local.
-Escape character is '^]'.
-HELP
-PLAY $PLAYLIST_NAME  - Switch to the specified playlist.
-FFWD                 - Skip to the next track in the playlist.
-HELP                 - Display command help.
-KTHX                 - Close the current connection.
-STOP                 - Stop Croaker.
-OK
+*Trying 127.0.0.1...*
+*Connected to croaker.local.*
+*Escape character is '^]'.*
+help
+
+PLAY PLAYLIST    - Switch to the specified playlist.
+LIST [PLAYLIST]  - List playlists or contents of the specified list.
+FFWD             - Skip to the next track in the playlist.
+HELP             - Display command help.
+KTHX             - Close the current connection.
+STOP             - Stop the current track and stream silence.
+STFU             - Terminate the Croaker server.
+```
+
+List available playlists:
+
+```
+list
+
+battle
+adventure
+session_start
 ```
 
 Switch to battle music -- roll initiative!
-
 ```
-PLAY battle
+play battle
 OK
 ```
 
@@ -58,10 +87,17 @@ FFWD
 OK
 ```
 
-Stop the server:
+Stop the music:
 
 ```
 STOP
-Shutting down.
+OK
+```
+
+Disconnect:
+
+```
+kthx
+KBAI
 Connection closed by foreign host.
 ```
