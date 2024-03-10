@@ -10,20 +10,19 @@ import typer
 from dotenv import load_dotenv
 from typing_extensions import Annotated
 
-import croaker.path
-from croaker.exceptions import ConfigurationError
+from croaker import path
 from croaker.playlist import Playlist
 from croaker.server import server
 
-SETUP_HELP = """
+SETUP_HELP = f"""
 # Root directory for croaker configuration and logs. See also croaker --root.
-CROAKER_ROOT=~/.dnd/croaker
+CROAKER_ROOT={path.root()}
 
 # where to store playlist sources
-#PLAYLIST_ROOT=$CROAKER_ROOT/playlists
+#PLAYLIST_ROOT={path.root()}/playlists
 
 # Where the record the daemon's PID
-#PIDFILE=$CROAKER_ROOT/croaker.pid
+#PIDFILE={path.root()}/croaker.pid
 
 # Command and Control TCP Server bind address
 HOST=0.0.0.0
@@ -68,20 +67,17 @@ def main(
         level=logging.DEBUG if debug else logging.INFO,
     )
 
-    try:
-        croaker.path.root()
-        croaker.path.playlist_root()
-    except ConfigurationError as e:
-        sys.stderr.write(f"{e}\n\n{SETUP_HELP}")
-        sys.exit(1)
-
 
 @app.command()
 def setup(context: typer.Context):
     """
     (Re)Initialize Croaker.
     """
-    sys.stderr.write("Interactive setup is not yet available. Sorry!\n")
+
+    sys.stderr.write(
+        "Interactive setup is not available, but you can redirect "
+        "this command's output to a defaults file of your choice.\n"
+    )
     print(dedent(SETUP_HELP))
 
 
