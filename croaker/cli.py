@@ -22,9 +22,6 @@ CROAKER_ROOT=~/.dnd/croaker
 # where to store playlist sources
 #PLAYLIST_ROOT=$CROAKER_ROOT/playlists
 
-# where to cache transcoded media files
-#CACHE_ROOT=$CROAKER_ROOT/cache
-
 # Where the record the daemon's PID
 #PIDFILE=$CROAKER_ROOT/croaker.pid
 
@@ -34,11 +31,6 @@ PORT=8003
 
 # the kinds of files to add to playlists
 MEDIA_GLOB=*.mp3,*.flac,*.m4a
-
-# If defined, transcode media before streaming it, and cache it to disk. The
-# strings INFILE and OUTFILE will be replaced with the media source file and
-# the cached output location, respectively.
-TRANSCODER=/usr/bin/ffmpeg -i INFILE '-hide_banner -loglevel error -codec:v copy -codec:a libmp3lame -q:a 2' OUTFILE
 
 # Icecast2 configuration for Liquidsoap
 ICECAST_PASSWORD=
