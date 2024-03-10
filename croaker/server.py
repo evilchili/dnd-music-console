@@ -29,7 +29,8 @@ class RequestHandler(socketserver.StreamRequestHandler):
         "FFWD": "            - Skip to the next track in the playlist.",
         "HELP": "            - Display command help.",
         "KTHX": "            - Close the current connection.",
-        "STOP": "            - Stop Croaker.",
+        "STOP": "            - Stop the current track and stream silence.",
+        "STFU": "            - Terminate the Croaker server."
     }
 
     def handle(self):
@@ -45,6 +46,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
         """
         while True:
             self.data = self.rfile.readline().strip().decode()
+            logger.debug(f"Received: {self.data}")
             try:
                 cmd = self.data[0:4].strip().upper()
                 args = self.data[5:]
@@ -86,6 +88,9 @@ class RequestHandler(socketserver.StreamRequestHandler):
         return self.send("\n".join(f"{cmd} {txt}" for cmd, txt in self.supported_commands.items()))
 
     def handle_STOP(self, args):
+        return(self.server.stop_event.set())
+
+    def handle_STFU(self, args):
         self.send("Shutting down.")
         self.server.stop()
 

@@ -9,7 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.10,<4.0"
 prompt-toolkit = "^3.0.38"
 typer = "^0.9.0"
 python-dotenv = "^0.21.0"
@@ -21,6 +21,7 @@ requests = "^2.31.0"
 psutil = "^5.9.8"
 exscript = "^2.6.28"
 python-shout = "^0.2.8"
+ffmpeg-python = "^0.2.0"
 
 [tool.poetry.scripts]
 croaker = "croaker.cli:app"

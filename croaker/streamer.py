@@ -1,10 +1,14 @@
+import queue
 import logging
+import io
 import os
 import threading
 from functools import cached_property
 from pathlib import Path
 
 import shout
+
+from croaker import transcoder
 
 logger = logging.getLogger('streamer')
 
@@ -23,6 +27,11 @@ class AudioStreamer(threading.Thread):
         self.chunk_size = chunk_size
 
     @cached_property
+    def silence(self):
+        with (Path(__file__).parent / 'silence.mp3').open('rb') as stream:
+            return io.BytesIO(stream.read())
+
+    @cached_property
     def _shout(self):
         s = shout.Shout()
         s.name = "Croaker Radio"
@@ -37,19 +46,38 @@ class AudioStreamer(threading.Thread):
         return s
 
     def run(self):
-        logger.debug("Initialized")
         self._shout.open()
-        while not self.stop_requested.is_set():
-            self._shout.get_connected()
-            track = self.queue.get(block=True)
-            logger.debug(f"Received: {track = }")
-            if track:
+        logger.debug(f"Connnected to shoutcast server at {self._shout.host}:{self._shout.port}")
+        while True:
+
+            # If the user said STOP, clear the queue.
+            if self.stop_requested.is_set():
+                logger.debug("Stop requested; clearing queue.")
+                self.clear_queue()
+                self.stop_requested.clear()
+
+            # Check to see if there is a queued request. If there is, play it.
+            # If there isn't, or if there's a problem playing the request,
+            # fallback to silence.
+            not_playing = False
+            try:
+                request = self.queue.get(block=False)
+                logger.debug(f"Received: {request = }")
+                self.play_file(Path(request.decode()))
+            except queue.Empty:
+                logger.debug("Nothing queued; looping silence.")
+                not_playing = True
+            except Exception as exc:
+                logger.error("Caught exception; falling back to silence.", exc_info=exc)
+                not_playing = True
+
+            if not_playing:
                 try:
-                    self.play(Path(track.decode()))
-                except shout.ShoutException as e:
-                    logger.error("An error occurred while streaming a track.", exc_info=e)
-                    self._shout.close()
-                    self._shout.open()
+                    self.silence.seek(0, 0)
+                    self._shout.set_metadata({"song": '[NOTHING PLAYING]'})
+                    self.play_from_stream(self.silence)
+                except Exception as exc:
+                    logger.error("Caught exception trying to loop silence!", exc_info=exc)
         self._shout.close()
 
     def clear_queue(self):
@@ -60,37 +88,43 @@ class AudioStreamer(threading.Thread):
         self.load_requested.clear()
         logger.debug("Load event cleared.")
 
-    def play(self, track: Path):
-        with track.open("rb") as fh:
-            self._shout.get_connected()
-            logger.debug(f"Streaming {track.stem = }")
-            self._shout.set_metadata({"song": track.stem})
-            input_buffer = fh.read(self.chunk_size)
-            while True:
+    def _read_chunk(self, filehandle):
+        chunk = filehandle.read(self.chunk_size)
+        return chunk
 
-                # To load a playlist, stop streaming the current track and clear the queue
-                # but do not clear the event. run() will detect it and
-                if self.load_requested.is_set():
-                    logger.debug("Load was requested.")
-                    self.clear_queue()
-                    return
+    def play_file(self, track: Path):
+        logger.debug(f"Streaming {track.stem = }")
+        self._shout.set_metadata({"song": track.stem})
+        with transcoder.open(track) as fh:
+            return self.play_from_stream(fh)
 
-                # Stop streaming and clear the queue
-                if self.stop_requested.is_set():
-                    logger.debug("Stop was requested.")
-                    self.stop_requested.clear()
-                    return
+    def play_from_stream(self, stream):
+        self._shout.get_connected()
+        input_buffer = self._read_chunk(stream)
+        while True:
 
-                # Stop streaming and clear the queue
-                if self.skip_requested.is_set():
-                    logger.debug("Skip was requested.")
-                    self.skip_requested.clear()
-                    return
+            # To load a playlist, stop streaming the current track and clear the queue
+            # but do not clear the event. run() will detect it and
+            if self.load_requested.is_set():
+                logger.debug("Load was requested.")
+                self.clear_queue()
+                return
 
-                # continue streaming the current track to icecast, until complete
-                buf = input_buffer
-                input_buffer = fh.read(self.chunk_size)
-                if len(buf) == 0:
-                    break
-                self._shout.send(buf)
-                self._shout.sync()
+            # Stop streaming and clear the queue
+            if self.stop_requested.is_set():
+                logger.debug("Stop was requested; aborting current stream.")
+                return
+
+            # Stop streaming and clear the queue
+            if self.skip_requested.is_set():
+                logger.debug("Skip was requested.")
+                self.skip_requested.clear()
+                return
+
+            # continue streaming the current track to icecast, until complete
+            buf = input_buffer
+            input_buffer = self._read_chunk(stream)
+            if len(buf) == 0:
+                break
+            self._shout.send(buf)
+            self._shout.sync()
