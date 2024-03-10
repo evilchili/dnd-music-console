@@ -1,16 +1,9 @@
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
 import croaker.playlist
 import croaker.path
-
-@pytest.fixture(autouse=True)
-def mock_env(monkeypatch):
-    fixtures = Path(__file__).parent / 'fixtures'
-    monkeypatch.setenv('CROAKER_ROOT', str(fixtures))
-    monkeypatch.setenv('MEDIA_GLOB', '*.mp3,*.foo,*.bar')
 
 
 def test_playlist_loading():
