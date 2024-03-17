@@ -45,40 +45,43 @@ class AudioStreamer(threading.Thread):
         s.audio_info = {shout.SHOUT_AI_BITRATE: "192", shout.SHOUT_AI_SAMPLERATE: "44100", shout.SHOUT_AI_CHANNELS: "5"}
         return s
 
-    def run(self):
+    def run(self):  # pragma: no cover
         self._shout.open()
         logger.debug(f"Connnected to shoutcast server at {self._shout.host}:{self._shout.port}")
         while True:
-
-            # If the user said STOP, clear the queue.
-            if self.stop_requested.is_set():
-                logger.debug("Stop requested; clearing queue.")
-                self.clear_queue()
-                self.stop_requested.clear()
-
-            # Check to see if there is a queued request. If there is, play it.
-            # If there isn't, or if there's a problem playing the request,
-            # fallback to silence.
-            not_playing = False
-            try:
-                request = self.queue.get(block=False)
-                logger.debug(f"Received: {request = }")
-                self.play_file(Path(request.decode()))
-            except queue.Empty:
-                logger.debug("Nothing queued; looping silence.")
-                not_playing = True
-            except Exception as exc:
-                logger.error("Caught exception; falling back to silence.", exc_info=exc)
-                not_playing = True
-
-            if not_playing:
-                try:
-                    self.silence.seek(0, 0)
-                    self._shout.set_metadata({"song": '[NOTHING PLAYING]'})
-                    self.play_from_stream(self.silence)
-                except Exception as exc:
-                    logger.error("Caught exception trying to loop silence!", exc_info=exc)
+            self.do_one_loop()
         self._shout.close()
+
+    def do_one_loop(self):
+
+        # If the user said STOP, clear the queue.
+        if self.stop_requested.is_set():
+            logger.debug("Stop requested; clearing queue.")
+            self.clear_queue()
+            self.stop_requested.clear()
+
+        # Check to see if there is a queued request. If there is, play it.
+        # If there isn't, or if there's a problem playing the request,
+        # fallback to silence.
+        not_playing = False
+        try:
+            request = self.queue.get(block=False)
+            logger.debug(f"Received: {request = }")
+            self.play_file(Path(request.decode()))
+        except queue.Empty:
+            logger.debug("Nothing queued; looping silence.")
+            not_playing = True
+        except Exception as exc:
+            logger.error("Caught exception; falling back to silence.", exc_info=exc)
+            not_playing = True
+
+        if not_playing:
+            try:
+                self.silence.seek(0, 0)
+                self._shout.set_metadata({"song": '[NOTHING PLAYING]'})
+                self.play_from_stream(self.silence)
+            except Exception as exc:  # pragma: no cover
+                logger.error("Caught exception trying to loop silence!", exc_info=exc)
 
     def clear_queue(self):
         logger.debug("Clearing queue...")

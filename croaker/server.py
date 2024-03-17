@@ -33,6 +33,8 @@ class RequestHandler(socketserver.StreamRequestHandler):
         "STFU": "            - Terminate the Croaker server."
     }
 
+    should_listen = True
+
     def handle(self):
         """
         Start a command and control session. Commands are read one line at a
@@ -69,6 +71,8 @@ class RequestHandler(socketserver.StreamRequestHandler):
             if not handler:
                 self.send(f"ERR No handler for {cmd}.")
             handler(args)
+            if not self.should_listen:
+                break
 
     def send(self, msg):
         return self.wfile.write(msg.encode() + b"\n")
