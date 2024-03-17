@@ -1,6 +1,5 @@
 import queue
 import logging
-import io
 import os
 import threading
 from functools import cached_property
@@ -28,8 +27,7 @@ class AudioStreamer(threading.Thread):
 
     @cached_property
     def silence(self):
-        with (Path(__file__).parent / 'silence.mp3').open('rb') as stream:
-            return io.BytesIO(stream.read())
+        return transcoder.open(Path(__file__).parent / 'silence.mp3', bufsize=2*self.chunk_size)
 
     @cached_property
     def _shout(self):
@@ -92,13 +90,12 @@ class AudioStreamer(threading.Thread):
         logger.debug("Load event cleared.")
 
     def _read_chunk(self, filehandle):
-        chunk = filehandle.read(self.chunk_size)
-        return chunk
+        return filehandle.read(self.chunk_size)
 
     def play_file(self, track: Path):
         logger.debug(f"Streaming {track.stem = }")
         self._shout.set_metadata({"song": track.stem})
-        with transcoder.open(track) as fh:
+        with transcoder.open(track, bufsize=2*self.chunk_size) as fh:
             return self.play_from_stream(fh)
 
     def play_from_stream(self, stream):

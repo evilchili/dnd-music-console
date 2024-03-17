@@ -8,7 +8,7 @@ from croaker import transcoder
 
 
 @pytest.mark.parametrize('suffix, expected', [
-    ('.mp3', b''),
+    ('.mp3', b'_theme.mp3\n'),
     ('.foo', b'transcoding!\n'),
 ])
 def test_transcoder_open(monkeypatch, suffix, expected):

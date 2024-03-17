@@ -7,7 +7,7 @@ import ffmpeg
 logger = logging.getLogger('transcoder')
 
 
-def open(infile: Path):
+def open(infile: Path, bufsize: int = 4096):
     """
     Return a stream of mp3 data for the given path on disk.
 
@@ -18,7 +18,7 @@ def open(infile: Path):
     suffix = infile.suffix.lower()
     if suffix == '.mp3':
         logger.debug(f"Not transcoding mp3 {infile = }")
-        return infile.open('rb')
+        return infile.open('rb', buffering=bufsize)
 
     ffmpeg_args = (
         ffmpeg
@@ -29,7 +29,7 @@ def open(infile: Path):
     )
 
     # Force close STDIN to prevent ffmpeg from trying to read from it. silly ffmpeg.
-    proc = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    proc = subprocess.Popen(ffmpeg_args, bufsize=bufsize, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     proc.stdin.close()
     logger.debug(f"Spawned ffmpeg (PID {proc.pid}) with args {ffmpeg_args = }")
     return proc.stdout
