@@ -5,7 +5,7 @@ from pathlib import Path
 
 from daemon import pidfile as _pidfile
 
-logger = logging.getLogger('daemon')
+logger = logging.getLogger("daemon")
 
 
 def pidfile(pidfile_path: Path, sig=signal.SIGQUIT, terminate_if_running: bool = True):

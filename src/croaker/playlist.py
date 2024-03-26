@@ -9,7 +9,7 @@ from typing import List
 
 import croaker.path
 
-logger = logging.getLogger('playlist')
+logger = logging.getLogger("playlist")
 
 playlists = {}
 

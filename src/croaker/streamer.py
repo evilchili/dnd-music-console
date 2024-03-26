@@ -1,6 +1,6 @@
-import queue
 import logging
 import os
+import queue
 import threading
 from functools import cached_property
 from pathlib import Path
@@ -9,7 +9,7 @@ import shout
 
 from croaker import transcoder
 
-logger = logging.getLogger('streamer')
+logger = logging.getLogger("streamer")
 
 
 class AudioStreamer(threading.Thread):
@@ -17,6 +17,7 @@ class AudioStreamer(threading.Thread):
     Receive filenames from the controller thread and stream the contents of
     those files to the icecast server.
     """
+
     def __init__(self, queue, skip_event, stop_event, load_event, chunk_size=4096):
         super().__init__()
         self.queue = queue
@@ -27,7 +28,7 @@ class AudioStreamer(threading.Thread):
 
     @cached_property
     def silence(self):
-        return transcoder.open(Path(__file__).parent / 'silence.mp3', bufsize=2*self.chunk_size)
+        return transcoder.open(Path(__file__).parent / "silence.mp3", bufsize=2 * self.chunk_size)
 
     @cached_property
     def _shout(self):
@@ -51,7 +52,6 @@ class AudioStreamer(threading.Thread):
         self._shout.close()
 
     def do_one_loop(self):
-
         # If the user said STOP, clear the queue.
         if self.stop_requested.is_set():
             logger.debug("Stop requested; clearing queue.")
@@ -76,7 +76,7 @@ class AudioStreamer(threading.Thread):
         if not_playing:
             try:
                 self.silence.seek(0, 0)
-                self._shout.set_metadata({"song": '[NOTHING PLAYING]'})
+                self._shout.set_metadata({"song": "[NOTHING PLAYING]"})
                 self.play_from_stream(self.silence)
             except Exception as exc:  # pragma: no cover
                 logger.error("Caught exception trying to loop silence!", exc_info=exc)
@@ -95,14 +95,13 @@ class AudioStreamer(threading.Thread):
     def play_file(self, track: Path):
         logger.debug(f"Streaming {track.stem = }")
         self._shout.set_metadata({"song": track.stem})
-        with transcoder.open(track, bufsize=2*self.chunk_size) as fh:
+        with transcoder.open(track, bufsize=2 * self.chunk_size) as fh:
             return self.play_from_stream(fh)
 
     def play_from_stream(self, stream):
         self._shout.get_connected()
         input_buffer = self._read_chunk(stream)
         while True:
-
             # To load a playlist, stop streaming the current track and clear the queue
             # but do not clear the event. run() will detect it and
             if self.load_requested.is_set():

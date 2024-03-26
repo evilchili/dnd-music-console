@@ -42,7 +42,7 @@ ICECAST_URL=
 app = typer.Typer()
 app_state = {}
 
-logger = logging.getLogger('cli')
+logger = logging.getLogger("cli")
 
 
 @app.callback()

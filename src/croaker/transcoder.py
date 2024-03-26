@@ -1,10 +1,10 @@
-from pathlib import Path
-import subprocess
 import logging
+import subprocess
+from pathlib import Path
 
 import ffmpeg
 
-logger = logging.getLogger('transcoder')
+logger = logging.getLogger("transcoder")
 
 
 def open(infile: Path, bufsize: int = 4096):
@@ -16,15 +16,14 @@ def open(infile: Path, bufsize: int = 4096):
     a pipe to ffmpeg's STDOUT.
     """
     suffix = infile.suffix.lower()
-    if suffix == '.mp3':
+    if suffix == ".mp3":
         logger.debug(f"Not transcoding mp3 {infile = }")
-        return infile.open('rb', buffering=bufsize)
+        return infile.open("rb", buffering=bufsize)
 
     ffmpeg_args = (
-        ffmpeg
-        .input(str(infile))
-        .output('-', format='mp3', q=2)
-        .global_args('-hide_banner', '-loglevel', 'quiet')
+        ffmpeg.input(str(infile))
+        .output("-", format="mp3", q=2)
+        .global_args("-hide_banner", "-loglevel", "quiet")
         .compile()
     )
 

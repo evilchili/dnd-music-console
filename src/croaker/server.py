@@ -13,7 +13,7 @@ from croaker.pidfile import pidfile
 from croaker.playlist import load_playlist
 from croaker.streamer import AudioStreamer
 
-logger = logging.getLogger('server')
+logger = logging.getLogger("server")
 
 
 class RequestHandler(socketserver.StreamRequestHandler):
@@ -22,6 +22,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
     command and control protocol and sends commands to the shoutcast source
     client on behalf of the user.
     """
+
     supported_commands = {
         # command              # help text
         "PLAY": "PLAYLIST    - Switch to the specified playlist.",
@@ -30,7 +31,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
         "HELP": "            - Display command help.",
         "KTHX": "            - Close the current connection.",
         "STOP": "            - Stop the current track and stream silence.",
-        "STFU": "            - Terminate the Croaker server."
+        "STFU": "            - Terminate the Croaker server.",
     }
 
     should_listen = True
@@ -92,7 +93,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
         return self.send("\n".join(f"{cmd} {txt}" for cmd, txt in self.supported_commands.items()))
 
     def handle_STOP(self, args):
-        return(self.server.stop_event.set())
+        return self.server.stop_event.set()
 
     def handle_STFU(self, args):
         self.send("Shutting down.")
@@ -103,6 +104,7 @@ class CroakerServer(socketserver.TCPServer):
     """
     A Daemonized TCP Server that also starts a Shoutcast source client.
     """
+
     allow_reuse_address = True
 
     def __init__(self):
@@ -173,7 +175,7 @@ class CroakerServer(socketserver.TCPServer):
     def list(self, playlist_name: str = None):
         if playlist_name:
             return str(load_playlist(playlist_name))
-        return '\n'.join([str(p.name) for p in path.playlist_root().iterdir()])
+        return "\n".join([str(p.name) for p in path.playlist_root().iterdir()])
 
     def load(self, playlist_name: str):
         logger.debug(f"Switching to {playlist_name = }")
