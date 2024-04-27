@@ -62,19 +62,19 @@ def audio_streamer(mock_shout, input_queue, skip_event, stop_event, load_event):
 
 def test_streamer_stop(audio_streamer, stop_event, output_stream):
     stop_event.set()
-    audio_streamer.do_one_loop()
+    audio_streamer.stream_queued_audio()
     assert not stop_event.is_set()
 
 
 def test_streamer_skip(audio_streamer, skip_event, output_stream):
     skip_event.set()
-    audio_streamer.do_one_loop()
+    audio_streamer.stream_queued_audio()
     assert not skip_event.is_set()
 
 
 def test_streamer_load(audio_streamer, load_event, output_stream):
     load_event.set()
-    audio_streamer.do_one_loop()
+    audio_streamer.stream_queued_audio()
     assert not load_event.is_set()
 
 
@@ -88,19 +88,19 @@ def test_clear_queue(audio_streamer, input_queue):
 
 
 def test_streamer_defaults_to_silence(audio_streamer, input_queue, output_stream, silence_bytes):
-    audio_streamer.do_one_loop()
+    audio_streamer.stream_queued_audio()
     track = playlist.Playlist(name="test_playlist").tracks[0]
     input_queue.put(bytes(track))
-    audio_streamer.do_one_loop()
-    audio_streamer.do_one_loop()
+    audio_streamer.stream_queued_audio()
+    audio_streamer.stream_queued_audio()
     assert get_stream_output(output_stream) == silence_bytes + track.read_bytes() + silence_bytes
 
 
 def test_streamer_plays_silence_on_error(monkeypatch, audio_streamer, input_queue, output_stream, silence_bytes):
-    monkeypatch.setattr(audio_streamer, "play_file", MagicMock(side_effect=Exception))
+    monkeypatch.setattr(audio_streamer.queue, "get", MagicMock(side_effect=Exception))
     track = playlist.Playlist(name="test_playlist").tracks[0]
     input_queue.put(bytes(track))
-    audio_streamer.do_one_loop()
+    audio_streamer.stream_queued_audio()
     assert get_stream_output(output_stream) == silence_bytes
 
 
@@ -111,14 +111,14 @@ def test_streamer_plays_from_queue(audio_streamer, input_queue, output_stream):
         input_queue.put(bytes(track))
         expected += track.read_bytes()
     while not input_queue.empty():
-        audio_streamer.do_one_loop()
+        audio_streamer.stream_queued_audio()
     assert get_stream_output(output_stream) == expected
 
 
 def test_streamer_handles_stop_interrupt(audio_streamer, output_stream, stop_event):
     stop_event.set()
     audio_streamer.silence.seek(0, 0)
-    audio_streamer.play_from_stream(audio_streamer.silence)
+    audio_streamer.stream_queued_audio()
     assert get_stream_output(output_stream) == b""
 
 
@@ -127,6 +127,6 @@ def test_streamer_handles_load_interrupt(audio_streamer, input_queue, output_str
     input_queue.put(bytes(pl.tracks[0]))
     load_event.set()
     audio_streamer.silence.seek(0, 0)
-    audio_streamer.play_from_stream(audio_streamer.silence)
+    audio_streamer.stream_queued_audio()
     assert get_stream_output(output_stream) == b""
     assert input_queue.empty
