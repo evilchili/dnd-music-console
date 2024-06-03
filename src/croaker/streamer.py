@@ -4,10 +4,11 @@ import queue
 import threading
 from functools import cached_property
 from pathlib import Path
+from time import sleep
 
 import shout
 
-from croaker import transcoder
+from croaker.transcoder import FrameAlignedStream
 
 logger = logging.getLogger("streamer")
 
@@ -28,7 +29,7 @@ class AudioStreamer(threading.Thread):
 
     @property
     def silence(self):
-        return transcoder.open(Path(__file__).parent / "silence.mp3", bufsize=2 * self.chunk_size)
+        return FrameAlignedStream.from_source(Path(__file__).parent / "silence.mp3", chunk_size=self.chunk_size)
 
     @cached_property
     def _shout(self):
@@ -41,13 +42,18 @@ class AudioStreamer(threading.Thread):
         s.password = os.environ["ICECAST_PASSWORD"]
         s.protocol = os.environ.get("ICECAST_PROTOCOL", "http")
         s.format = os.environ.get("ICECAST_FORMAT", "mp3")
-        s.audio_info = {shout.SHOUT_AI_BITRATE: "192", shout.SHOUT_AI_SAMPLERATE: "44100", shout.SHOUT_AI_CHANNELS: "5"}
         return s
 
     def run(self):  # pragma: no cover
-        self._shout.open()
-        logger.debug(f"Connnected to shoutcast server at {self._shout.host}:{self._shout.port}")
         while True:
+            try:
+                logger.debug(f"Connecting to shoutcast server at {self._shout.host}:{self._shout.port}")
+                self._shout.open()
+            except shout.ShoutException as e:
+                logger.error("Error connecting to shoutcast server. Will sleep and try again.", exc_info=e)
+                sleep(3)
+                continue
+
             try:
                 self.stream_queued_audio()
             except Exception as exc:
@@ -59,9 +65,6 @@ class AudioStreamer(threading.Thread):
         while not self.queue.empty():
             self.queue.get()
 
-    def _read_chunk(self, filehandle):
-        return filehandle.read(self.chunk_size)
-
     def queued_audio_source(self):
         """
         Return a filehandle to the next queued audio source, or silence if the queue is empty.
@@ -69,41 +72,47 @@ class AudioStreamer(threading.Thread):
         try:
             track = Path(self.queue.get(block=False).decode())
             logger.debug(f"Streaming {track.stem = }")
-            self._shout.set_metadata({"song": track.stem})
-            return transcoder.open(track, bufsize=2 * self.chunk_size)
+            return FrameAlignedStream.from_source(track, chunk_size=self.chunk_size), track.stem
         except queue.Empty:
-            logger.debug("Nothing queued; looping silence.")
+            logger.debug("Nothing queued; enqueing silence.")
         except Exception as exc:
             logger.error("Caught exception; falling back to silence.", exc_info=exc)
-        self._shout.set_metadata({"song": "[NOTHING PLAYING]"})
-        return self.silence
+        return self.silence, "[NOTHING PLAYING]"
 
     def stream_queued_audio(self):
-        with self.queued_audio_source() as stream:
-            buf = self._read_chunk(stream)
-            while len(buf):
-                # stop streaming the current source
+
+        stream = None
+        title = None
+        next_stream = None
+        next_title = None
+        buffer = b''
+
+        while True:
+            stream, title = (next_stream, next_title) if next_stream else self.queued_audio_source()
+            logging.debug(f"Starting stream of {title = }, {stream = }")
+            self._shout.set_metadata({"song": title})
+            next_stream, next_title = self.queued_audio_source()
+
+            for chunk in stream:
+                self._shout.send(chunk)
+                self._shout.sync()
+
+                # play the next source immediately
                 if self.skip_requested.is_set():
                     logger.debug("Skip was requested.")
                     self.skip_requested.clear()
-                    return
+                    break
 
                 # clear the queue
                 if self.load_requested.is_set():
                     logger.debug("Load was requested.")
                     self.clear_queue()
                     self.load_requested.clear()
-                    return
+                    break
 
                 # Stop streaming and clear the queue
                 if self.stop_requested.is_set():
                     logger.debug("Stop was requested.")
                     self.clear_queue()
                     self.stop_requested.clear()
-                    return
-
-                # stream buffered audio and refill with the next chunk
-                input_buffer = self._read_chunk(stream)
-                self._shout.send(buf)
-                self._shout.sync()
-                buf = input_buffer
+                    break
