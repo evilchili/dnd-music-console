@@ -1,8 +1,8 @@
 import logging
 import subprocess
+from dataclasses import dataclass
 from io import BufferedReader
 from pathlib import Path
-from dataclasses import dataclass
 
 import ffmpeg
 
@@ -24,8 +24,9 @@ class FrameAlignedStream:
         >>> for segment in stream:
             ...
     """
+
     source: BufferedReader
-    chunk_size:  int = 1024
+    chunk_size: int = 1024
     bit_rate: int = 192000
     sample_rate: int = 44100
 
@@ -44,7 +45,7 @@ class FrameAlignedStream:
 
         # step through the source a byte at a time and look for the frame sync.
         header = None
-        buffer = b''
+        buffer = b""
         while not header:
             buffer += self.source.read(4 - len(buffer))
             if len(buffer) != 4:
@@ -84,11 +85,11 @@ class FrameAlignedStream:
         Generate approximately chunk_size segments of audio data by iterating over the
         frames, buffering them, and then yielding several as a single bytes object.
         """
-        buf = b''
+        buf = b""
         for frame in self.frames:
             if len(buf) >= self.chunk_size:
                 yield buf
-                buf = b''
+                buf = b""
             if not frame:
                 break
             buf += frame
@@ -102,28 +103,27 @@ class FrameAlignedStream:
         """
         ffmpeg_args = (
             ffmpeg.input(str(infile))
-            .output("pipe:",
-                    map='a',
-                    format="mp3",
-
-                    # no ID3 headers -- saves having to decode them later
-                    write_xing=0,
-                    id3v2_version=0,
-
-                    # force sasmple and bit rates
-                    **{
-                        'b:a': kwargs.get('bit_rate', cls.bit_rate),
-                        'ar': kwargs.get('sample_rate', cls.sample_rate),
-                    })
+            .output(
+                "pipe:",
+                map="a",
+                format="mp3",
+                # no ID3 headers -- saves having to decode them later
+                write_xing=0,
+                id3v2_version=0,
+                # force sasmple and bit rates
+                **{
+                    "b:a": kwargs.get("bit_rate", cls.bit_rate),
+                    "ar": kwargs.get("sample_rate", cls.sample_rate),
+                },
+            )
             .global_args("-hide_banner", "-vn")
             .compile()
         )
 
         # Force close STDIN to prevent ffmpeg from trying to read from it. silly ffmpeg.
-        proc = subprocess.Popen(ffmpeg_args,
-                                bufsize=kwargs.get('chunk_size', cls.chunk_size),
-                                stdout=subprocess.PIPE,
-                                stdin=subprocess.PIPE)
+        proc = subprocess.Popen(
+            ffmpeg_args, bufsize=kwargs.get("chunk_size", cls.chunk_size), stdout=subprocess.PIPE, stdin=subprocess.PIPE
+        )
         proc.stdin.close()
         logger.debug(f"Spawned ffmpeg (PID {proc.pid}) with args {ffmpeg_args = }")
         return cls(proc.stdout, **kwargs)

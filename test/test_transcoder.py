@@ -10,9 +10,8 @@ from croaker import playlist, transcoder
 def mock_mp3decoder(monkeypatch):
     def read(stream):
         return stream.read()
-    monkeypatch.setattr(transcoder, 'MP3Decoder', MagicMock(**{
-        '__enter__.return_value.read': read
-    }))
+
+    monkeypatch.setattr(transcoder, "MP3Decoder", MagicMock(**{"__enter__.return_value.read": read}))
 
 
 @pytest.mark.xfail

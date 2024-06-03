@@ -80,12 +80,10 @@ class AudioStreamer(threading.Thread):
         return self.silence, "[NOTHING PLAYING]"
 
     def stream_queued_audio(self):
-
         stream = None
         title = None
         next_stream = None
         next_title = None
-        buffer = b''
 
         while True:
             stream, title = (next_stream, next_title) if next_stream else self.queued_audio_source()
